@@ -1,10 +1,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#define FOUR 4
 
 int hex_char_int(char hex );
 
+// Transform decimal to hexadecimal integers and return a string of hexadecimal representation
+char *decimalToHexadecimal(unsigned long decimal){
+
+    // Allocate memory for max 20
+    char *hex= malloc(20 * sizeof(char *));
+
+    int i = 0;
+    while(decimal != 0){
+
+        unsigned long temp  = 0;
+        temp = decimal % 16;
+
+        // check if temp < 10 and return the number
+        if(temp < 10){
+            hex[i] = (temp + 48);
+            i++;
+        }
+        // otherwise, return a letter to the specific 10-16 representation as A-F
+        else{
+
+            hex[i] = temp + 55;
+            i++;
+        }
+        decimal = decimal / 16;
+    }
+    // Return 0 if empty array
+    if (strcmp(hex, "") == 0){
+        return "0";
+    }
+    return hex;
+}
 // Gives back a binary from 0 to 16;
 char *binaryHexadecimalInteger(int index){
     if (index < 0 || index > 15){
@@ -32,69 +63,26 @@ char *binaryHexadecimalInteger(int index){
     return arr[index];
 }
 
-// Returns a string of binaries from a given decimal in 4 bytes alignment
-char *decimalToBinary(int decimal){
-
-    int hex  = 0x00;
-    int len = 0;
-
-    // Transform decimal to hexadecimal
-    for (int i = 0; i < decimal; i++){
-        hex++;
-    }
-
-    //printf("hex store: %x %d",hex, decimal);
-
-    char buffer[10]; // malloc this one
-    snprintf(buffer, 10, "%x", hex);
-    len = (int)strlen(buffer);
-    char *binary = malloc(len*sizeof(char *));
-    for (int i = 0; i < len; ++i) {
-        int index = hex_char_int(buffer[i]);
-        char *temp = binaryHexadecimalInteger(index);
-        strcat(binary, temp);
-    }
-
-    return binary;
-}
 // Utility function to transform hex char to decimal
 int hex_char_int(char hex ){
     switch (hex) {
-        case 'a':
+        case 'A':
             return 10;
-        case 'b':
+        case 'B':
             return 11;
-        case 'c':
+        case 'C':
             return 12;
-        case 'd':
+        case 'D':
             return 13;
-        case 'e':
+        case 'E':
             return 14;
-        case 'f':
+        case 'F':
             return 15;
         default:
             return hex - '0';
     }
 }
-// String binary trimmer for given size
-void printRequiredBinaryFormat(char *binaryString, int len, int size_required){
 
-    if (size_required == len){
-        printf("%s",binaryString);
-    }
-    else if (size_required > len){
-        // add zeros;
-        for (int i = 0; i < size_required-len; ++i) {
-            printf("0");
-        }
-        printf("%s",binaryString);
-    } else{
-        for (int i = len-size_required; i < len; ++i) {
-            printf("%c",binaryString[i]);
-        }
-    }
-    printf("\n");
-}
 int main( int argc, char *argv[argc+1]) {
 
     //File name from arguments
@@ -114,29 +102,127 @@ int main( int argc, char *argv[argc+1]) {
         return EXIT_SUCCESS;
     }
     // Get the data
-    int matrixGrid;
+    unsigned long inputDecimal;
+    unsigned int inputSize;
+    char *hex = NULL;
 
-    while ( fscanf( fp, "%d", &matrixGrid ) != EOF ){
-        printf("%d", matrixGrid);
+    while ( fscanf( fp, "%ld %d", &inputDecimal, &inputSize ) != EOF ){
+        hex = decimalToHexadecimal(inputDecimal); // decimal in hexadecimal string
+        int lenHex = strlen(hex);
+        int lenBinHex = FOUR*lenHex;
+        char *bin=NULL;
+        int index;
+        // Check for error
+        if (inputSize == 0){
+            perror("Please enter only valid values for size greater than 0\n");
+            return EXIT_FAILURE;
+        }
+        if (lenHex == 1){
+            // the same size
+            index = hex_char_int(hex[0]);
+            bin = binaryHexadecimalInteger(index);
+            if (inputSize == FOUR){
+                // Print the value
+                //printf(" %c %s",hex[i], bin); // test print
+                printf("%s",bin);
+            } else if (inputSize < FOUR){
+                // Smaller than
+                for (int i = FOUR-inputSize; i < lenBinHex; ++i) {
+                    //printf(" %c %s",hex[i], bin); // test print
+                    printf("%c",bin[i]);
+                }
 
-        char *binary;
-        binary = decimalToBinary(27);
-        unsigned long strLenBin = strlen(binary);
-        printRequiredBinaryFormat(binary,(int)strLenBin,3);
-        binary=NULL;
-        free(binary);
+            } else{
+                //bigger than
+                //Print zeros before
+                for (int i = 0; i < inputSize-lenBinHex; ++i) {
+                    printf("0");
+                }
+                //print the binary
+                for (int i = 0; i < lenBinHex; ++i) {
+                    //printf(" %c %s",hex[i], bin); // test print
+                    printf("%c",bin[i]);
+                }
+            }
+            printf("\n");
+            continue;
+        }
+
+        // If input file is multiple of 4 display print each set of binaries
+        if (lenHex > 1){
+
+            // when is a 4 bites representation print each one
+            if ( lenBinHex == inputSize){
+                // Print in reverse order
+                for (int i = lenHex-1; i >= 0; --i) {
+                    index = hex_char_int(hex[i]);
+                    bin = binaryHexadecimalInteger(index);
+                    //printf(" %c %s",hex[i], bin); // test print
+                    printf("%s",bin);
+                }
+                printf("\n");
+                continue;
+            }else if ( lenBinHex < inputSize){
+                //printf("small\n");
+                for (int i = 0; i < inputSize-lenBinHex; ++i) {
+                    printf("0");
+                }
+                for (int i = lenHex-1; i >= 0; --i) {
+                    index = hex_char_int(hex[i]);
+                    bin = binaryHexadecimalInteger(index);
+                    //printf(" %c %s",hex[i], bin); // test print
+                    printf("%s",bin);
+                }
+
+            } else{
+                //bigger than
+                //printf("bigger\n");
+                //print the remainder
+                // If input is multiple of 4 the print the bytes
+                if (inputSize % FOUR == 0){
+                    for (int i = ((int)inputSize / FOUR)-1; i >= 0; --i) {
+                        index = hex_char_int(hex[i]);
+                        bin = binaryHexadecimalInteger(index);
+                        //printf(" %c %s",hex[i], bin); // test print
+                        printf("%s",bin);
+                    }
+                } else{
+                    //bigger Number
+                    unsigned int tmp = inputSize/FOUR;
+                    // smaller input
+                    if (tmp == 0){
+                        index = hex_char_int(hex[0]);
+                        bin = binaryHexadecimalInteger(index);
+                        for (int i = FOUR - inputSize; i < FOUR; ++i) {
+                            printf("%c",bin[i]);
+                        }
+                        printf("\n");
+                        continue;
+                    } else{
+                        unsigned int integerSection = inputSize/FOUR;
+                        unsigned int offsetSection = inputSize%FOUR;
+                        index = hex_char_int(hex[integerSection]);
+                        bin = binaryHexadecimalInteger(index);
+                        for (int i = FOUR - offsetSection; i < FOUR; ++i) {
+                            printf("%c",bin[i]);
+                        }
+                        for (int i = (int)integerSection-1; i >= 0; --i) {
+                            index = hex_char_int(hex[i]);
+                            bin = binaryHexadecimalInteger(index);
+                            //printf(" %c %s",hex[i], bin); // test print
+                            printf("%s",bin);
+                        }
+
+                    }
+                }
+            }
+            printf("\n");
+
+        }
+
     }
-
-     //Close the file and destroy memory allocations
+     //Close the file memory allocations
     fclose(fp);
-
-
-
-
-
-
-
-
 
     return EXIT_SUCCESS;
 }
